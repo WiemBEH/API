@@ -95,11 +95,13 @@ module.exports = {
   login: function(req, res) {
     
     // Params
-    var email    = req.body.email;
+    var email    = req.body.email; 
     var password = req.body.password;
 
     if (email == null ||  password == null) {
-      return res.status(400).json({ 'error': 'missing parameters' });
+      res.render('home.ejs', {id: email, pwd: password, userid: -1, token: 0, message : 'missing parameters' });
+/*
+      return res.status(400).json({ 'error': 'missing parameters' });*/
     }
 
     asyncLib.waterfall([
@@ -111,7 +113,7 @@ module.exports = {
           done(null, userFound);
         })
         .catch(function(err) {
-          return res.status(500).json({ 'error': 'unable to verify user' });
+          return res.render('login.ejs', {message: 'unable to verify user'});
         });
       },
       function(userFound, done) {
@@ -120,22 +122,54 @@ module.exports = {
             done(null, userFound, resBycrypt);
           });
         } else {
-          return res.status(404).json({ 'error': 'user not exist in DB' });
+          return res.render('login.ejs', {message: 'user not exist in DB'});  
         }
       },
       function(userFound, resBycrypt, done) {
         if(resBycrypt) {
-          done(userFound);
+          done(null, userFound);
         } else {
-          return res.status(403).json({ 'error': 'invalid password' });
+            return res.render('login.ejs', {message: 'invalid password'});
         }
+      }, 
+
+      function(userFound, done) {
+        models.Like.findAll({
+          where : {
+            userId : userFound.id   
+          }
+       }).then(function(likeFound) {
+          done(null, likeFound, userFound);
+        });
+      },
+      function(likeFound, userFound, done) {
+        models.Message.findAll({
+          include: [{
+            model: models.Friend,
+            where: {
+              done : 1,
+              sender_user : userFound.id
+            }
+          }, {
+            model: models.User
+          }, 
+        ], 
+        order: [['updatedAt', 'DESC']] 
+      }).then(function(messageFound) {
+          done(userFound, messageFound, likeFound);
+        });
       }
-    ], function(userFound) {
+    ], function(userFound, messageFound, likeFound) {
       if (userFound) {
-        return res.status(201).json({
+        console.log(jwtUtils.generateTokenForUser(userFound));
+        console.log(likeFound);
+        return res.render('home.ejs', {id: email, pwd: password, userfound: userFound, messagefound: messageFound, likefound : likeFound, token: jwtUtils.generateTokenForUser(userFound)});
+
+/*        return res.status(201).json({
           'userId': userFound.id,
           'token': jwtUtils.generateTokenForUser(userFound)
         });
+        */
       } else {
         return res.status(500).json({ 'error': 'cannot log on user' });
       }

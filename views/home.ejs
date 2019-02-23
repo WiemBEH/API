@@ -1,0 +1,59 @@
+<% include header.ejs %>
+<%
+function like(message_id){
+  var result = "like";
+  likefound.forEach(function(key, index) {
+    if (key.messageId == message_id && key.isLike > 0) {
+      result = "dislike";
+    }
+  });
+  return result;
+}
+%>
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
+<script>
+    $(function() {
+      $(".like").click(function(){
+          console.log($(this).text());
+          var message_id = $(this).attr("message_id");
+          $.ajax({
+                 type: 'POST',
+                 url: 'http://localhost:8080/api/messages/'+message_id+'/vote/'+$(this).text(),
+                 beforeSend: function(xhr) {
+                      xhr.setRequestHeader("Authorization", "Bearer <%= token %>")
+                  }, error: function(xhr){
+                    alert("An error occured: " + xhr.status + " " + xhr.statusText);
+                  },  success: function(data){
+                     $("#likes"+message_id).text(data.likes+" Likes");
+                  }
+        })
+        if ($(this).text() === "like") {
+             $(this).text("dislike");
+        }
+        else {
+             $(this).text("like");
+        }
+      })  
+    });
+</script>
+
+<h1>Welcome <%= userfound.username  %> !</h1>
+
+<% messagefound.forEach(function(key, index) { %>
+<div class="jumbotron">
+  <h4 class="display-9"><%= key.User.username %> : <%= key.title %></h4>
+  <p class="lead"><%= key.content %></p>
+  <hr class="my-4">
+  <p><%= key.createdAt %></p>
+  <button type="submit" class="btn btn-primary like" message_id="<%= key.id %>"><%= like(key.id)%></button>
+  <p id="likes<%= key.id %>"><%= key.likes %> Likes</p>
+</div>
+ <% }); %>
+
+<% include fooder.ejs %>
+
+
+
+

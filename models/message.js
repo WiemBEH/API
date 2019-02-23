@@ -9,12 +9,16 @@ module.exports = (sequelize, DataTypes) => {
     classMethods: {
       associate: function(models) {
         // associations can be defined here
-        
+        models.Message.belongsTo(
+              models.Friend, {
+                  foreignKey: 'userId',
+                  targetKey: 'receiver_user',
+        });    
         models.Message.belongsTo(models.User, {
           foreignKey: {
             allowNull: false
           }
-        })
+        });
       }
     }
   });

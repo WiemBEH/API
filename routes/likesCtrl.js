@@ -59,16 +59,21 @@ module.exports = {
           .then(function(userAlreadyLikedFound) {
             done(null, messageFound, userFound, userAlreadyLikedFound);
           })
+          /*
           .catch(function(err) {
             return res.status(500).json({ 'error': 'unable to verify is user already liked' });
-          });
+          });*/
         } else {
           res.status(404).json({ 'error': 'user not exist' });
         }
       },
       function(messageFound, userFound, userAlreadyLikedFound, done) {
         if(!userAlreadyLikedFound) {
-          messageFound.addUser(userFound, { isLike: LIKED })
+          models.Like.create({
+             messageId  : messageFound.id,
+             isLike  : 1,
+             userId : userId
+          })
           .then(function (alreadyLikeFound) {
             done(null, messageFound, userFound);
           })
@@ -110,6 +115,8 @@ module.exports = {
    // Getting auth header
    var headerAuth  = req.headers['authorization'];
    var userId      = jwtUtils.getUserId(headerAuth);
+
+console.log(userId);
 
    // Params
    var messageId = parseInt(req.params.messageId);
